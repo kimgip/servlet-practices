@@ -37,16 +37,5 @@
 
 	<build>
 		<finalName>helloweb</finalName>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.tomcat.maven</groupId>
-			    <artifactId>tomcat7-maven-plugin</artifactId>
-			    <version>2.2.1</version>
-			    <configuration>
-					<url>${tomcat.deploy.url}</url>
-					<server>tomcat-poscodx</server>
-				</configuration>
-			</plugin>
-		</plugins>
 	</build>
 </project>
