@@ -1,6 +1,9 @@
 package jstlel;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +34,14 @@ public class _01Servlet extends HttpServlet {
 		
 		request.setAttribute("obj", obj);
 		request.setAttribute("userVo", vo);
+		
+		// map
+		Map<String, Object> map = new HashMap<>();
+		map.put("ival", iVal);
+		map.put("fval", fVal);
+		map.put("sval", sVal);
+		
+		request.setAttribute("m", map);
 		
 		request.getRequestDispatcher("/WEB-INF/views/01.jsp").forward(request, response);
 		
