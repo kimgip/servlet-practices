@@ -25,60 +25,119 @@ public class GuestbookDao {
 		return conn;
 	}
 	
-	public boolean insert(GuestbookVo vo) {
-		boolean result = false;
+	public int insert(GuestbookVo vo) {
+		int result = 0;
+		Connection conn = null;
+		PreparedStatement pstmt1 = null;
+		PreparedStatement pstmt2 = null;
+		PreparedStatement pstmt3 = null;
 		
-		try (
-				Connection conn = connection();
-				) {
+		try {
+			conn = connection();
+			pstmt1 = conn.prepareStatement("update guestbook_log set count = count + 1 where date = current_date()");
+			pstmt2 = conn.prepareStatement("insert into guestbook_log values(current_date(), 1)");
+			pstmt3 = conn.prepareStatement("insert into guestbook values(null, ?, ?, ?, now())");
+			pstmt3.setString(1, vo.getName());
+			pstmt3.setString(2, vo.getPassword());
+			pstmt3.setString(3, vo.getContents());
+
+			// TX:BEGIN
+			conn.setAutoCommit(false);
 			
-			// 3. Statement 생성하기
-			String sql = "insert into guestbook values(null, ?, ?, ?, now())";
-			PreparedStatement pstmt = conn.prepareStatement(sql);
+			// DML1
+			int rowCount = pstmt1.executeUpdate();
 			
-			// 4. binding
-			pstmt.setString(1, vo.getName());
-			pstmt.setString(2, vo.getPassword());
-			pstmt.setString(3, vo.getContents());
+			// DML2
+			if(rowCount == 0) {
+				pstmt2.executeUpdate();
+			}
 			
-			// 4. SQL 실행
-			int count = pstmt.executeUpdate();
+			// DML3
+			result = pstmt3.executeUpdate();
 			
-			// 5. 결과처리
-			result = count == 1;
-			
-			pstmt.close();
-			
+			// TX:END(SUCCESS)
+			conn.commit();
 		} catch (SQLException e) {
 			System.out.println("error:"+e);
+			
+			// TX:END(FAIL)
+			try {
+				if(conn != null) {
+					conn.rollback();
+				}
+			} catch (SQLException ignored) {
+			}
+		} finally {
+			try {
+				if (conn != null) {
+					conn.close();
+				}
+				if (pstmt1 != null) {
+					pstmt1.close();
+				}
+				if (pstmt2 != null) {
+					pstmt2.close();
+				}
+				if (pstmt3 != null) {
+					pstmt3.close();
+				}
+			} catch(SQLException ignored) {
+			}
 		}
 		
 		return result;
 	}
 
-	public boolean deleteByNoAndPassword(Long no, String password) {
-		boolean result = false;
+	public int deleteByNoAndPassword(Long no, String password) {
+		int result = 0;
 		
-		try (
-				Connection conn = connection();
-				) {
+		Connection conn = null;
+		PreparedStatement pstmt1 = null;
+		PreparedStatement pstmt2 = null;
+		
+		try {
+			conn = connection();
+			pstmt1 = conn.prepareStatement("update guestbook_log set count = count - 1 where date = (select date(reg_date) from guestbook where no = ?)");
+			pstmt1.setLong(1, no);
+			pstmt2 = conn.prepareStatement("delete from guestbook where no = ? and password = ?");
+			pstmt2.setLong(1, no);
+			pstmt2.setString(2, password);
 			
-			// 3. Statement 생성하기
-			String sql = "delete from guestbook where no = ? and password = ?";
-			PreparedStatement pstmt = conn.prepareStatement(sql);
+			// TX:BEGIN
+			conn.setAutoCommit(false);
 			
-			// 4. binding
-			pstmt.setLong(1, no);
-			pstmt.setString(2, password);
+			// DML1
+			pstmt1.executeUpdate();
+
+			// DML2
+			result = pstmt2.executeUpdate();
 			
-			int count = pstmt.executeUpdate();
-			
-			// 5. 결과처리
-			result = count == 1;
-			pstmt.close();
+			// TX:END(SUCCESS)
+			conn.commit();
 		} catch (SQLException e) {
 			System.out.println("error:"+e);
-		}		
+			
+			// TX:END(FAIL)
+			try {
+				if(conn != null) {
+					conn.rollback(); // logic에선 사용하지 말것
+				}
+			} catch (SQLException ignored) {
+			}
+		} finally {
+			try {
+				if (conn != null) {
+					conn.close();
+				}
+				if (pstmt1 != null) {
+					pstmt1.close();
+				}
+				if (pstmt2 != null) {
+					pstmt2.close();
+				}
+			} catch(SQLException ignored) {
+			}
+		}
 		return result;
 	}
 
